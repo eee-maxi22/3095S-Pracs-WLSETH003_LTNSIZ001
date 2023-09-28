@@ -103,8 +103,9 @@ int main(void) {
 	// PWM setup
 	uint32_t CCR = 0;
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);  // Start PWM on TIM3 Channel 3
-	/* USER CODE END 2 */
+	HAL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_0);
 
+	/* USER CODE END 2 */
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
@@ -112,14 +113,13 @@ int main(void) {
 		HAL_GPIO_TogglePin(GPIOB, LED7_Pin);
 
 		// ADC to LCD; TODO: Read POT1 value and write to LCD
-		char* value[10];
-
+		char* value[4];
 		adc_val = pollADC();
-		sprintf(value, "%lu volts", adc_val);
+		sprintf(value, "%lu", adc_val);
 		writeLCD(value);
 		
 		// Update PWM value; TODO: Get CRR
-
+		CCR = ADCtoCCR(adc_val);
 		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, CCR);
 
 		// Wait for delay ms
@@ -341,16 +341,19 @@ void writeLCD(char* char_in) {
 // Get ADC value
 uint32_t pollADC(void) {
 	// TODO: Complete function body to get ADC val
+	HAL_ADC_Start(&hadc);
 	uint32_t val = HAL_ADC_GetValue(&hadc);
+	HAL_ADC_Stop(&hadc);
 	return val;
 }
 
-// // Calculate PWM CCR value
-// uint32_t ADCtoCCR(uint32_t adc_val){
-//   // TODO: Calculate CCR val using an appropriate equation
-
-// 	return val;
-// }
+// Calculate PWM CCR value
+uint32_t ADCtoCCR(uint32_t adc_val){
+  // TODO: Calculate CCR val using an appropriate equation
+	float duty_cycle = ((float) adc_val)/4095.0f;
+	uint32_t val = duty_cycle*47999;
+	return val;
+}
 
 void ADC1_COMP_IRQHandler(void) {
 	adc_val = HAL_ADC_GetValue(&hadc);	// read adc value
@@ -386,4 +389,3 @@ void assert_failed(uint8_t* file, uint32_t line) {
 	/* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
