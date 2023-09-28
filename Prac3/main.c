@@ -113,14 +113,14 @@ int main(void) {
 		HAL_GPIO_TogglePin(GPIOB, LED7_Pin);
 
 		// ADC to LCD; TODO: Read POT1 value and write to LCD
-		char* value[4];
-		adc_val = pollADC();
-		sprintf(value, "%lu", adc_val);
-		writeLCD(value);
-		
+		char* value[5];
+		adc_val = pollADC();			 // Get the value of the ADC
+		sprintf(value, "%lu", adc_val);	 // convert to string
+		writeLCD(value);				 // Write value to LCD
+
 		// Update PWM value; TODO: Get CRR
-		CCR = ADCtoCCR(adc_val);
-		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, CCR);
+		CCR = ADCtoCCR(adc_val);						   // Get CRR value
+		__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, CCR);  // Update PWM value
 
 		// Wait for delay ms
 		HAL_Delay(delay_t);
@@ -322,36 +322,47 @@ static void MX_GPIO_Init(void) {
 
 /* USER CODE BEGIN 4 */
 void EXTI0_1_IRQHandler(void) {
-	// // TODO: Add code to switch LED7 delay frequency
-	if (delay_t == 500)
-		delay_t = 1000;
-	else
-		delay_t = 500;
+	// TODO: Add code to switch LED7 delay frequency
+
+	curr_millis = HAL_GetTick();
+
+	// Check if the button might be a double press
+	if (curr_millis - prev_millis > 10) {
+		// Toggle the delay when button 0 is clicked
+		if (delay_t == 500)
+			delay_t = 1000;
+		else
+			delay_t = 500;
+			
+		prev_millis = HAL_GetTick();
+ 	}
+
+
 
 	HAL_GPIO_EXTI_IRQHandler(Button0_Pin);	// Clear interrupt flags
 }
 
 // TODO: Complete the writeLCD function
 void writeLCD(char* char_in) {
-	lcd_command(CLEAR);
-	lcd_putstring(char_in);
-	delay(3000);
+	lcd_command(CLEAR);		 // Clear display
+	lcd_putstring(char_in);	 // write to display
+	delay(3000);			 // Delay
 }
 
 // Get ADC value
 uint32_t pollADC(void) {
 	// TODO: Complete function body to get ADC val
-	HAL_ADC_Start(&hadc);
-	uint32_t val = HAL_ADC_GetValue(&hadc);
-	HAL_ADC_Stop(&hadc);
+	HAL_ADC_Start(&hadc);					 // Start sampling
+	uint32_t val = HAL_ADC_GetValue(&hadc);	 // Get ADC value
+	HAL_ADC_Stop(&hadc);					 // Stop sampling
 	return val;
 }
 
 // Calculate PWM CCR value
-uint32_t ADCtoCCR(uint32_t adc_val){
-  // TODO: Calculate CCR val using an appropriate equation
-	float duty_cycle = ((float) adc_val)/4095.0f;
-	uint32_t val = duty_cycle*47999;
+uint32_t ADCtoCCR(uint32_t adc_val) {
+	// TODO: Calculate CCR val using an appropriate equation
+	float duty_cycle = ((float)adc_val) / 4095.0f;	// Percentage of time the LED is on
+	uint32_t val = duty_cycle * 47999;				// The CRR value
 	return val;
 }
 
